@@ -3,25 +3,31 @@
 // profile match patterns for LinkedIn
 profileMatchPatterns = ["*://*.linkedin.com/in/*"];
 targetURL = "https://www.linkedin.com/psettings/profile-visibility";
+// state
+longState = {
+  desiredProfile: "",
+  originalProfileVisibility: "",
+};
 
-// to check whether the correct URL was intercepted
-function logURL(requestDetails) {
-  console.log("Loading: " + requestDetails.url);
+function redirectToVis() {
+  console.log("Redirecting to profile visibility page");
+  return { redirectUrl: targetURL };
 }
 
-function redirectToVis(requestDetails) {
-  console.log("Redirecting to profile visibility page");
-  if (requestDetails.url === targetURL) {
-    // if we were already headed there for some reason
-    console.log("FUCK");
-    return;
-  }
-  return { redirectUrl: targetURL };
+// fucntion docstring below
+/**
+ Performs the whole process of extension
+ **/
+function doPipeline(requestDetails) {
+  // store the original desired profile
+  longState.desiredProfile = requestDetails.url;
+  // then redirect
+  return redirectToVis();
 }
 
 // detect if a linkedin profile page is requested and intercept request
 browser.webRequest.onBeforeRequest.addListener(
-  redirectToVis,
+  doPipeline,
   {
     urls: profileMatchPatterns,
   },
