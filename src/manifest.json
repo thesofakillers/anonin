@@ -7,14 +7,8 @@
     "64": "icons/icon.png"
   },
   "background": {
-    "scripts": ["background_script.js", "browser-polyfill.min.js"]
+    "scripts": ["browser-polyfill.min.js", "background_script.js"]
   },
-  "content_scripts": [
-    {
-      "matches": ["*://*.mozilla.org/*"],
-      "js": ["content_script.js", "browser-polyfill.min.js"]
-    }
-  ],
   "page_action": {
     "default_icon": {
       "64": "icons/icon.png"
@@ -22,5 +16,10 @@
     "default_popup": "pageAction/index.html",
     "default_title": "AnonIn"
   },
-  "permissions": ["webRequest", "webRequestBlocking", "*://*.linkedin.com/*"]
+  "permissions": [
+    "webRequest",
+    "webRequestBlocking",
+    "https://www.linkedin.com/psettings/profile-visibility",
+    "*://*.linkedin.com/*"
+  ]
 }
