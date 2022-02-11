@@ -1,5 +1,7 @@
 // Put all the javascript code here, that you want to execute in background.
 
+// variables {{{
+
 // profile match patterns for LinkedIn
 var profileMatchPatterns = ["*://*.linkedin.com/in/*"];
 var targetURL = "https://www.linkedin.com/psettings/profile-visibility";
@@ -8,7 +10,11 @@ var longState = {
   desiredProfile: "",
   originalProfileVisibility: "",
 };
+// }}}
 
+// functions {{{
+
+/* redirects to profile visbility page */
 function redirectToVis() {
   console.log("Redirecting to profile visibility page");
   return { redirectUrl: targetURL };
@@ -22,15 +28,6 @@ function handleProfileRequest(requestDetails) {
   return redirectToVis();
 }
 
-// detect if a linkedin profile page is requested and intercept request
-browser.webRequest.onBeforeRequest.addListener(
-  handleProfileRequest,
-  {
-    urls: profileMatchPatterns,
-  },
-  ["blocking"]
-);
-
 // when the linkedin profile visibility page is loaded, handle
 function handleProfileVisibility() {
   // inject content script only if request was made by the extension
@@ -41,8 +38,21 @@ function handleProfileVisibility() {
     });
   }
 }
+// }}}
 
+// listeners {{{
+
+// detect if a linkedin profile page is requested and intercept request
+browser.webRequest.onBeforeRequest.addListener(
+  handleProfileRequest,
+  {
+    urls: profileMatchPatterns,
+  },
+  ["blocking"]
+);
 // detect that we're visiting the profile visibility page
 browser.webRequest.onCompleted.addListener(handleProfileVisibility, {
   urls: [targetURL],
 });
+// listen to messages from content script
+// }}}
