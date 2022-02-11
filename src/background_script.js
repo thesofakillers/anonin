@@ -16,7 +16,6 @@ var longState = {
 
 /* redirects to profile visbility page */
 function redirectToVis() {
-  console.log("Redirecting to profile visibility page");
   return { redirectUrl: targetURL };
 }
 
@@ -28,7 +27,7 @@ function handleProfileRequest(requestDetails) {
   return redirectToVis();
 }
 
-// when the linkedin profile visibility page is loaded, handle
+/* when the linkedin profile visibility page is loaded, handle */
 function handleProfileVisibility() {
   // inject content script only if request was made by the extension
   if (longState.desiredProfile != "") {
@@ -36,6 +35,14 @@ function handleProfileVisibility() {
     browser.tabs.executeScript({
       file: "content_script.js",
     });
+  }
+}
+
+/* handle messages from content script */
+function handleMessage(message, _sender, _sendResponse) {
+  if (message.type == "original-visibility") {
+    longState.originalProfileVisibility = message.content;
+    console.log(longState);
   }
 }
 // }}}
@@ -55,4 +62,5 @@ browser.webRequest.onCompleted.addListener(handleProfileVisibility, {
   urls: [targetURL],
 });
 // listen to messages from content script
+browser.runtime.onMessage.addListener(handleMessage);
 // }}}

@@ -22,4 +22,8 @@ var visibilityOptions = [fullProfileOpt, anonProfileOpt, hideProfileOpt];
 
 // determine current profile visibility
 selectedOption = determineWhichChecked(visibilityOptions);
-console.log(selectedOption.id);
+
+var sending = browser.runtime.sendMessage({
+  type: "original-visibility",
+  content: selectedOption.id,
+});
