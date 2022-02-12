@@ -17,6 +17,7 @@
     "default_title": "AnonIn"
   },
   "permissions": [
+    "activeTab",
     "webRequest",
     "webRequestBlocking",
     "https://www.linkedin.com/psettings/profile-visibility",
