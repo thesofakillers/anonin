@@ -3,7 +3,8 @@
 // variables {{{
 
 // profile match patterns for LinkedIn
-var profileMatchPatterns = ["*://*.linkedin.com/in/*"];
+var profileURL = "*://*.linkedin.com/in/*";
+var profileURLRegex = "^[^:]*:(?://)?(?:[^/]*\\.)?linkedin\\.com/in/.*$";
 var profileVisURL = "https://www.linkedin.com/psettings/profile-visibility";
 // state
 var longState = {
@@ -27,8 +28,10 @@ function redirectToUser(url) {
   });
 }
 
-/* Performs the whole process of the extension */
-function handleProfileRequest(requestDetails) {
+/* handles profile visits */
+function handleProfileVisit(requestDetails) {
+  console.log("HEEEEY");
+  console.log(longState);
   if (longState.desiredProfile == "") {
     // store the original desired profile
     longState.desiredProfile = requestDetails.url;
@@ -64,12 +67,18 @@ function handleMessage(message, _sender, _sendResponse) {
 
 // detect if a linkedin profile page is requested and intercept request
 browser.webRequest.onBeforeRequest.addListener(
-  handleProfileRequest,
+  handleProfileVisit,
   {
-    urls: profileMatchPatterns,
+    urls: [profileURL],
   },
   ["blocking"]
 );
+// TODO: add listener for navigation, with working filtering
+// // similarly, detect if profile is navigated to and intercept
+// browser.webNavigation.onBeforeNavigate.addListener(
+//   () => console.log("navigation intercepted"),
+//   { url: [{ urlEquals: "www.linkedin.com/in/giuliostarace" }] }
+// );
 // detect that we're visiting the profile visibility page
 browser.webRequest.onCompleted.addListener(handleProfileVisibility, {
   urls: [profileVisURL],
