@@ -5,6 +5,9 @@
 // profile match patterns for LinkedIn
 var profileURL = "*://*.linkedin.com/in/*";
 var profileURLRegex = "^[^:]*:(?://)?(?:[^/]*\\.)?linkedin\\.com/in/.*$";
+var URLRegex = /.*\:\/\/.*\.*\.*(\/.*)?/;
+var linkedinURLRegex =
+  /https?:\/\/(www\.)?linkedin\.com\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/;
 var visibilityURL = "https://www.linkedin.com/psettings/profile-visibility";
 // state
 var longState = {
@@ -14,6 +17,12 @@ var longState = {
   desiredProfile: "",
   // the original visibility of the profile
   originalProfileVisibility: "",
+  // whether we're on linkedin
+  linkedinDetected: false,
+  // whether we're resetting
+  resetting: false,
+  // specified if we're continuing
+  exitURL: undefined,
 };
 // }}}
 
@@ -21,20 +30,17 @@ var longState = {
 
 /* redirects to profile visbility page */
 function redirectToVis() {
-  console.log("redirecting to profile visibility page");
   return { redirectUrl: visibilityURL };
 }
 
-function redirectToUser(url) {
-  console.log("redirecting back to user");
-  var updating = browser.tabs.update({
+async function redirectToUser(url) {
+  await browser.tabs.update({
     url: url,
   });
 }
 
 /* handles profile visits */
 function handleProfileRequest(requestDetails) {
-  console.log("profile requested");
   // only if we haven't already set visibility to private
   if (!longState.setVisibility) {
     // store the original desired profile
@@ -45,14 +51,56 @@ function handleProfileRequest(requestDetails) {
 }
 
 /* when the linkedin profile visibility page is loaded, handle */
-function handleProfileVisibility(requestDetails) {
+async function handleVisibility(requestDetails) {
   if (requestDetails.method == "GET") {
-    // inject content script only if request was made by the extension
-    if (longState.desiredProfile != "") {
-      browser.tabs.executeScript({ file: "browser-polyfill.min.js" });
-      browser.tabs.executeScript({
+    if (longState.resetting) {
+      currentTab = await browser.tabs.query({ active: true });
+      currentTab = currentTab[0];
+      await browser.tabs.sendMessage(currentTab.id, {
+        type: "desired-visibility",
+        content: longState.originalProfileVisibility,
+      });
+    } else if (longState.desiredProfile != "") {
+      await browser.tabs.executeScript({ file: "browser-polyfill.min.js" });
+      await browser.tabs.executeScript({
         file: "content_script.js",
       });
+    }
+  } else if (requestDetails.method == "POST") {
+    // this signals a succesfull profile visibility change
+    if (longState.resetting) {
+      if (longState.exitURL) {
+        browser.tabs.update({
+          url: longState.exitURL,
+        });
+      } else {
+        currentTab = await browser.tabs.query({ active: true });
+        currentTab = currentTab[0];
+        browser.tabs.remove(currentTab.id);
+      }
+      // reset longState
+      longState = {
+        // whether we've set the visibility to private
+        setVisibility: false,
+        // the profile we want to navigate to after setting visibility to private
+        desiredProfile: "",
+        // the original visibility of the profile
+        originalProfileVisibility: "",
+        // whether we're on linkedin
+        linkedinDetected: false,
+        // whether we're resetting
+        resetting: false,
+        // specified if we're continuing
+        exitURL: undefined,
+      };
+    } else if (!longState.setVisibility) {
+      longState.setVisibility = true;
+      currentTab = await browser.tabs.query({ active: true });
+      currentTab = currentTab[0];
+      browser.tabs.sendMessage(currentTab.id, {
+        type: "set-visibility",
+      });
+      redirectToUser(longState.desiredProfile);
     }
   }
 }
@@ -65,9 +113,6 @@ function handleMessage(message, _sender, _sendResponse) {
       longState.setVisibility = true;
       redirectToUser(longState.desiredProfile);
     }
-  } else if (message.type == "complete-anonymous") {
-    longState.setVisibility = true;
-    redirectToUser(longState.desiredProfile);
   } else if (message.type == "profile-navigation") {
     if (!longState.setVisibility) {
       longState.desiredProfile = message.content;
@@ -75,6 +120,36 @@ function handleMessage(message, _sender, _sendResponse) {
         url: visibilityURL,
       });
     }
+  } else if (message.type == "linkedin-detected") {
+    if (!longState.linkedinDetected && !longState.resetting) {
+      // listen for navigations away from linkedin within the tab
+      browser.webNavigation.onBeforeNavigate.addListener(handleNavigation);
+      longState.linkedinDetected = true;
+    }
+  }
+}
+
+async function handleNavigation(details) {
+  if (
+    !details.url.match(linkedinURLRegex) &&
+    details.url.match(URLRegex) &&
+    details.parentFrameId == -1 &&
+    longState.setVisibility
+  ) {
+    browser.webNavigation.onBeforeNavigate.removeListener(handleNavigation);
+    cleanUp(details.url);
+  }
+}
+
+async function cleanUp(target_url = undefined) {
+  longState.resetting = true;
+  longState.exitURL = target_url;
+  // navigate to profile visibility page if original visibility wasnt private
+  if (longState.originalProfileVisibility !== "option-hide") {
+    await browser.tabs.update({
+      url: visibilityURL,
+      // other stuff is handled by handleVisibility
+    });
   }
 }
 // }}}
@@ -89,10 +164,11 @@ browser.webRequest.onBeforeRequest.addListener(
   },
   ["blocking"]
 );
+
 // detect that we're visiting the profile visibility page
-browser.webRequest.onCompleted.addListener(handleProfileVisibility, {
+browser.webRequest.onCompleted.addListener(handleVisibility, {
   urls: [visibilityURL],
 });
+
 // listen to messages from content script
 browser.runtime.onMessage.addListener(handleMessage);
-// }}}

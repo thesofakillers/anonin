@@ -1,3 +1,7 @@
+browser.runtime.sendMessage({
+  type: "linkedin-detected",
+});
+
 var profileURLRegex = "^[^:]*:(?://)?(?:[^/]*\\.)?linkedin\\.com/in/.*$";
 var visibilityURL = "https://www.linkedin.com/psettings/profile-visibility";
 

@@ -32,11 +32,8 @@ function main() {
   if (originalOption.id != hideProfileOpt.id) {
     hideProfileOpt.click();
   }
-
-  // we are now done
-  browser.runtime.sendMessage({
-    type: "complete-anonymous",
-  });
+  // post request will signal that we're ready to redirect
+  // handled by background script
 }
 
 setTimeout(main, 500);
