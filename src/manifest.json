@@ -9,7 +9,12 @@
   "content_scripts": [
     {
       "matches": ["*://*.linkedin.com/*"],
-      "js": ["linkedin_observer.js"],
+      "js": ["browser-polyfill.min.js", "linkedin_observer.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["https://www.linkedin.com/psettings/profile-visibility"],
+      "js": ["browser-polyfill.min.js", "cleanup_visibility.js"],
       "run_at": "document_start"
     }
   ],
@@ -24,10 +29,11 @@
     "default_title": "AnonIn"
   },
   "permissions": [
+    "*://*.linkedin.com/*",
     "activeTab",
     "webRequest",
+    "webNavigation",
     "webRequestBlocking",
-    "https://www.linkedin.com/psettings/profile-visibility",
-    "*://*.linkedin.com/*"
+    "https://www.linkedin.com/psettings/profile-visibility"
   ]
 }
