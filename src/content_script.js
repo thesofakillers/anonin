@@ -23,20 +23,20 @@ function main() {
   // determine current profile visibility
   originalOption = determineWhichChecked(visibilityOptions);
 
-  // browser.runtime.sendMessage({
-  //   type: "original-visibility",
-  //   content: originalOption.id,
-  // });
+  browser.runtime.sendMessage({
+    type: "original-visibility",
+    content: originalOption.id,
+  });
 
   // click on hide profile option
   if (originalOption.id != hideProfileOpt.id) {
     hideProfileOpt.click();
   }
 
-  // // we are now done
-  // browser.runtime.sendMessage({
-  //   type: "complete-anonymous",
-  // });
+  // we are now done
+  browser.runtime.sendMessage({
+    type: "complete-anonymous",
+  });
 }
 
 setTimeout(main, 500);
