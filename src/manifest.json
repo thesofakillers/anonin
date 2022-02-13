@@ -25,7 +25,6 @@
   },
   "permissions": [
     "activeTab",
-    "webNavigation",
     "webRequest",
     "webRequestBlocking",
     "https://www.linkedin.com/psettings/profile-visibility",
