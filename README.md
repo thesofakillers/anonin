@@ -8,7 +8,11 @@ them back to public (if I remember). This is quite laborious.
 
 AnonIn is a Firefox/Chrome extension that automatically changes LinkedIn
 visibility to private before visiting a person's profile, changing it back to
-previous settings when closing the tab.
+previous settings when navigating away.
+
+NOTE TO SELF: considering prompting user to change settings back after period of
+time; upon tab close seems very difficult and some users may keep tab
+permanently open.
 
 ## Development
 
