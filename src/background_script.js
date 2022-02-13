@@ -5,10 +5,14 @@
 // profile match patterns for LinkedIn
 var profileURL = "*://*.linkedin.com/in/*";
 var profileURLRegex = "^[^:]*:(?://)?(?:[^/]*\\.)?linkedin\\.com/in/.*$";
-var profileVisURL = "https://www.linkedin.com/psettings/profile-visibility";
+var visibilityURL = "https://www.linkedin.com/psettings/profile-visibility";
 // state
 var longState = {
+  // whether we've set the visibility to private
+  setVisibility: false,
+  // the profile we want to navigate to after setting visibility to private
   desiredProfile: "",
+  // the original visibility of the profile
   originalProfileVisibility: "",
 };
 // }}}
@@ -18,7 +22,7 @@ var longState = {
 /* redirects to profile visbility page */
 function redirectToVis() {
   console.log("redirecting to profile visibility page");
-  return { redirectUrl: profileVisURL };
+  return { redirectUrl: visibilityURL };
 }
 
 function redirectToUser(url) {
@@ -29,10 +33,10 @@ function redirectToUser(url) {
 }
 
 /* handles profile visits */
-function handleProfileVisit(requestDetails) {
-  console.log("HEEEEY");
-  console.log(longState);
-  if (longState.desiredProfile == "") {
+function handleProfileRequest(requestDetails) {
+  console.log("profile requested");
+  // only if we haven't already set visibility to private
+  if (!longState.setVisibility) {
     // store the original desired profile
     longState.desiredProfile = requestDetails.url;
     // then redirect
@@ -57,8 +61,20 @@ function handleProfileVisibility(requestDetails) {
 function handleMessage(message, _sender, _sendResponse) {
   if (message.type == "original-visibility") {
     longState.originalProfileVisibility = message.content;
+    if (longState.originalProfileVisibility == "option-hide") {
+      longState.setVisibility = true;
+      redirectToUser(longState.desiredProfile);
+    }
   } else if (message.type == "complete-anonymous") {
+    longState.setVisibility = true;
     redirectToUser(longState.desiredProfile);
+  } else if (message.type == "profile-navigation") {
+    if (!longState.setVisibility) {
+      longState.desiredProfile = message.content;
+      browser.tabs.update({
+        url: visibilityURL,
+      });
+    }
   }
 }
 // }}}
@@ -67,21 +83,15 @@ function handleMessage(message, _sender, _sendResponse) {
 
 // detect if a linkedin profile page is requested and intercept request
 browser.webRequest.onBeforeRequest.addListener(
-  handleProfileVisit,
+  handleProfileRequest,
   {
     urls: [profileURL],
   },
   ["blocking"]
 );
-// TODO: add listener for navigation, with working filtering
-// // similarly, detect if profile is navigated to and intercept
-// browser.webNavigation.onBeforeNavigate.addListener(
-//   () => console.log("navigation intercepted"),
-//   { url: [{ urlEquals: "www.linkedin.com/in/giuliostarace" }] }
-// );
 // detect that we're visiting the profile visibility page
 browser.webRequest.onCompleted.addListener(handleProfileVisibility, {
-  urls: [profileVisURL],
+  urls: [visibilityURL],
 });
 // listen to messages from content script
 browser.runtime.onMessage.addListener(handleMessage);
